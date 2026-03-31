@@ -1,13 +1,19 @@
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization')
+module.exports = function handler(req, res) {
+  const forwarded = req.headers['x-forwarded-uri'] || req.headers['x-matched-path'] || ''
+  const originalUrl = req.url || '/'
   
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
+  let path = originalUrl
+  if (path.startsWith('/api/index')) {
+    path = path.replace('/api/index', '')
   }
-
-  const url = req.url.replace(/^\/api/, '')
-  const target = 'https://api.tikhub.io' + url
+  if (path.startsWith('/api') && !path.startsWith('/api/v1')) {
+    path = path.replace(/^\/api/, '')
+  }
+  if (!path.startsWith('/')) {
+    path = '/' + path
+  }
+  
+  const target = 'https://api.tikhub.io' + path
 
   const headers = {
     'Accept': 'application/json',
@@ -19,12 +25,15 @@ module.exports = async function handler(req, res) {
     headers['Authorization'] = auth
   }
 
-  try {
-    const resp = await fetch(target, { method: 'GET', headers })
-    const data = await resp.text()
-    res.setHeader('Content-Type', 'application/json')
-    res.status(resp.status).send(data)
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
+  fetch(target, { method: 'GET', headers: headers })
+    .then(function(resp) {
+      return resp.text().then(function(data) {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Content-Type', 'application/json')
+        res.status(resp.status).send(data)
+      })
+    })
+    .catch(function(e) {
+      res.status(500).json({ error: e.message })
+    })
 }
