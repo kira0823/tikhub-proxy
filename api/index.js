@@ -1,8 +1,8 @@
 module.exports = function handler(req, res) {
-  const forwarded = req.headers['x-forwarded-uri'] || req.headers['x-matched-path'] || ''
-  const originalUrl = req.url || '/'
+  const parsed = new URL(req.url, 'http://localhost')
+  parsed.searchParams.delete('path')
   
-  let path = originalUrl
+  let path = parsed.pathname
   if (path.startsWith('/api/index')) {
     path = path.replace('/api/index', '')
   }
@@ -12,8 +12,8 @@ module.exports = function handler(req, res) {
   if (!path.startsWith('/')) {
     path = '/' + path
   }
-  
-  const target = 'https://api.tikhub.io' + path
+
+  const target = 'https://api.tikhub.io' + path + '?' + parsed.searchParams.toString()
 
   const headers = {
     'Accept': 'application/json',
