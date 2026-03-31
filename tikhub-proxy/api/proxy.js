@@ -1,4 +1,4 @@
-module.exports async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const target = 'https://api.tikhub.io' + req.url.replace('/api/proxy', '')
 
   const headers = {
